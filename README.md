@@ -1,3 +1,4 @@
 timetools
 =========
-Tools for mocking and testing time-based functions
+
+Go library with various time utilities used at Mailgun.
