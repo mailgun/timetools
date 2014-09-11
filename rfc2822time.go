@@ -11,6 +11,18 @@ import (
 // so JSON package decodes/encodes it properly.
 type RFC2822Time time.Time
 
+func NewRFC2822Time(timestamp int64) RFC2822Time {
+	return RFC2822Time(time.Unix(timestamp, 0).UTC())
+}
+
+func (t RFC2822Time) Unix() int64 {
+	return time.Time(t).Unix()
+}
+
+func (t RFC2822Time) IsZero() bool {
+	return time.Time(t).IsZero()
+}
+
 func (t RFC2822Time) MarshalJSON() ([]byte, error) {
 	return []byte(strconv.Quote(time.Time(t).Format(time.RFC1123))), nil
 }
