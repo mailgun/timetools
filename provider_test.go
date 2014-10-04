@@ -2,8 +2,8 @@ package timetools
 
 import (
 	"fmt"
-	"time"
 	"testing"
+	"time"
 )
 
 var _ = fmt.Printf // for testing
