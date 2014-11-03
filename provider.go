@@ -49,9 +49,11 @@ func (t *FreezedTime) After(d time.Duration) <-chan time.Time {
 }
 
 type sleepableTime struct {
+	rw          sync.RWMutex // protects currentTime
 	currentTime time.Time
-	waiters     map[time.Time][]chan time.Time
-	mu          sync.Mutex
+
+	mu      sync.Mutex // protects waiters
+	waiters map[time.Time][]chan time.Time
 }
 
 // SleepProvider returns a TimeProvider that has good fakes for
@@ -67,6 +69,8 @@ func SleepProvider(currentTime time.Time) TimeProvider {
 }
 
 func (t *sleepableTime) UtcNow() time.Time {
+	t.rw.RLock()
+	defer t.rw.RUnlock()
 	return t.currentTime
 }
 
@@ -75,11 +79,11 @@ func (t *sleepableTime) Sleep(d time.Duration) {
 }
 
 func (t *sleepableTime) After(d time.Duration) <-chan time.Time {
+	c := make(chan time.Time, 1)
+	until := t.UtcNow().Add(d)
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
-	c := make(chan time.Time, 1)
-	until := t.currentTime.Add(d)
 	t.waiters[until] = append(t.waiters[until], c)
 	return c
 }
@@ -92,6 +96,8 @@ func AdvanceTimeBy(st TimeProvider, d time.Duration) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	t.rw.Lock()
+	defer t.rw.Unlock()
 	t.currentTime = t.currentTime.Add(d)
 	for k, v := range t.waiters {
 		if k.Before(t.currentTime) {
