@@ -30,20 +30,29 @@ func (*RealTime) After(d time.Duration) <-chan time.Time {
 
 // FreezedTime is manually controlled time for use in tests.
 type FreezedTime struct {
+	sync.Mutex
 	CurrentTime time.Time
 }
 
 func (t *FreezedTime) UtcNow() time.Time {
+	t.Lock()
+	defer t.Unlock()
 	return t.CurrentTime
 }
 
 func (t *FreezedTime) Sleep(d time.Duration) {
+	t.Lock()
+	defer t.Unlock()
 	t.CurrentTime = t.CurrentTime.Add(d)
 }
 
 func (t *FreezedTime) After(d time.Duration) <-chan time.Time {
 	t.Sleep(d)
 	c := make(chan time.Time, 1)
+
+	t.Lock()
+	defer t.Unlock()
+
 	c <- t.CurrentTime
 	return c
 }
